@@ -10,6 +10,20 @@
 - **Containerization**: Docker Compose
 - **Protocol**: CCSDS (Consultative Committee for Space Data Systems)
 
+## Screenshots
+
+### GET /api/v1/telemetry
+![GET /api/v1/telemetry](screenshots/API1.png)
+
+### GET /api/v1/telemetry/current
+![GET /api/v1/telemetry/current](screenshots/API2.png)
+
+### GET /api/v1/telemetry/anomalies
+![GET /api/v1/telemetry/anomalies](screenshots/API3.png)
+
+### GET /api/v1/telemetry/aggregations
+![GET /api/v1/telemetry/aggregations](screenshots/API4.png)
+
 ## 📋 Prerequisites
 
 - Docker and Docker Compose
