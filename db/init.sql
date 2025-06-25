@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 CREATE TABLE IF NOT EXISTS telemetry (
-    id SERIAL PRIMARY KEY,
+    id SERIAL,
     timestamp TIMESTAMPTZ NOT NULL,
     packet_id INTEGER NOT NULL,
     packet_seq_ctrl INTEGER NOT NULL,
@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS telemetry (
     signal_strength REAL NOT NULL,
     is_anomaly BOOLEAN DEFAULT FALSE,
     anomaly_type VARCHAR(50),
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (id, timestamp)
 );
 
 
@@ -48,8 +49,9 @@ GROUP BY bucket, subsystem_id;
 
 
 CREATE TABLE IF NOT EXISTS anomaly_history (
-    id SERIAL PRIMARY KEY,
-    telemetry_id INTEGER REFERENCES telemetry(id),
+    id SERIAL,
+    telemetry_id INTEGER NOT NULL,
+    telemetry_timestamp TIMESTAMPTZ NOT NULL,
     timestamp TIMESTAMPTZ NOT NULL,
     anomaly_type VARCHAR(50) NOT NULL,
     parameter_name VARCHAR(50) NOT NULL,
@@ -58,7 +60,8 @@ CREATE TABLE IF NOT EXISTS anomaly_history (
     severity VARCHAR(20) DEFAULT 'WARNING',
     acknowledged BOOLEAN DEFAULT FALSE,
     acknowledged_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (id, timestamp)
 );
 
 
@@ -120,10 +123,10 @@ BEGIN
         NEW.anomaly_type := anomaly_type_val;
         
         INSERT INTO anomaly_history (
-            telemetry_id, timestamp, anomaly_type, parameter_name, 
+            telemetry_id, telemetry_timestamp, timestamp, anomaly_type, parameter_name, 
             parameter_value, threshold_value
         ) VALUES (
-            NEW.id, NEW.timestamp, anomaly_type_val, param_name,
+            NEW.id, NEW.timestamp, NEW.timestamp, anomaly_type_val, param_name,
             CASE 
                 WHEN param_name = 'temperature' THEN NEW.temperature
                 WHEN param_name = 'battery' THEN NEW.battery
