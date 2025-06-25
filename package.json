@@ -1,0 +1,39 @@
+{
+  "name": "satellite-telemetry-system",
+  "version": "1.0.0",
+  "description": "A comprehensive real-time telemetry monitoring system for spacecraft data",
+  "main": "integration-test.js",
+  "scripts": {
+    "test": "node integration-test.js",
+    "start": "docker-compose up -d",
+    "stop": "docker-compose down",
+    "logs": "docker-compose logs -f",
+    "build": "docker-compose build",
+    "clean": "docker-compose down -v --remove-orphans"
+  },
+  "keywords": [
+    "telemetry",
+    "satellite",
+    "spacecraft",
+    "monitoring",
+    "real-time",
+    "anomaly-detection",
+    "timescaledb",
+    "react",
+    "go",
+    "docker"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "axios": "^1.4.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "react-toastify": "^11.0.5"
+  }
+}

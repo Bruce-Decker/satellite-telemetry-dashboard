@@ -1,0 +1,88 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Satellite Telemetry Dashboard",
+    "tags": ["telemetry", "satellite"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Temperature Over Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "temperature",
+            "legendFormat": "Temperature (°C)"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Battery Level",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "battery",
+            "legendFormat": "Battery (%)"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Altitude",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "altitude",
+            "legendFormat": "Altitude (km)"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Signal Strength",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "signal_strength",
+            "legendFormat": "Signal (dB)"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Anomaly Count",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "anomaly_count",
+            "legendFormat": "Anomalies"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Packet Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(packets_total[5m])",
+            "legendFormat": "Packets/sec"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s"
+  }
+} 

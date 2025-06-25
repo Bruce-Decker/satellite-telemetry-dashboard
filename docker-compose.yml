@@ -1,0 +1,115 @@
+services:
+  # Database (TimescaleDB)
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    environment:
+      POSTGRES_DB: telemetry
+      POSTGRES_USER: telemetry_user
+      POSTGRES_PASSWORD: telemetry_pass
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telemetry_user -d telemetry"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  
+  telemetry-generator:
+    build:
+      context: ./telemetry-generator
+      dockerfile: Dockerfile
+    ports:
+      - "8089:8089"
+    depends_on:
+      - postgres
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=telemetry
+      - DB_USER=telemetry_user
+      - DB_PASSWORD=telemetry_pass
+
+  # Telemetry Ingestion Service (Go)
+  telemetry-ingestion:
+    build:
+      context: ./telemetry-ingestion
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=telemetry
+      - DB_USER=telemetry_user
+      - DB_PASSWORD=telemetry_pass
+      - UDP_PORT=8090
+
+ 
+  telemetry-api:
+    build:
+      context: ./telemetry-api
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=telemetry
+      - DB_USER=telemetry_user
+      - DB_PASSWORD=telemetry_pass
+      - API_PORT=8080
+
+
+  telemetry-frontend:
+    build:
+      context: ./telemetry-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - telemetry-api
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data: 
