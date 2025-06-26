@@ -3,7 +3,7 @@
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd Turion_Take_Home
+cd satellite-telemetry-dashboard
 
 # Start all services
 docker-compose up -d

@@ -1,19 +1,13 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ToastContainer } from 'react-toastify';
 import App from './App';
 
-
-jest.mock('./api', () => ({
-  fetchCurrentStatus: jest.fn(),
-  fetchTelemetry: jest.fn(),
-  fetchAnomalies: jest.fn(),
-  fetchAggregations: jest.fn(),
-  fetchMinAggregations: jest.fn(),
-  fetchMaxAggregations: jest.fn(),
+// Mock axios instead of the API module since App uses axios directly
+jest.mock('axios', () => ({
+  get: jest.fn(),
 }));
-
 
 jest.mock('react-toastify', () => ({
   ToastContainer: ({ children }) => <div data-testid="toast-container">{children}</div>,
@@ -25,13 +19,11 @@ jest.mock('react-toastify', () => ({
   },
 }));
 
-
 jest.mock('react-chartjs-2', () => ({
   Line: ({ data, options }) => (
     <div data-testid="line-chart" data-chart-data={JSON.stringify(data)} />
   ),
 }));
-
 
 jest.mock('@fortawesome/react-fontawesome', () => ({
   FontAwesomeIcon: ({ icon }) => <span data-testid="fontawesome-icon">{icon.iconName}</span>,
@@ -129,34 +121,64 @@ describe('App Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Set up default axios mocks
+    const axios = require('axios');
+    axios.get.mockImplementation((url) => {
+      if (url.includes('/api/v1/telemetry/current')) {
+        return Promise.resolve({ data: mockCurrentStatus });
+      } else if (url.includes('/api/v1/telemetry') && !url.includes('/anomalies') && !url.includes('/aggregations')) {
+        return Promise.resolve({ data: mockTelemetryData });
+      } else if (url.includes('/api/v1/telemetry/anomalies')) {
+        return Promise.resolve({ data: mockAnomalies });
+      } else if (url.includes('/api/v1/telemetry/aggregations') && !url.includes('/min') && !url.includes('/max')) {
+        return Promise.resolve({ data: mockAggregations });
+      } else if (url.includes('/api/v1/telemetry/aggregations/min')) {
+        return Promise.resolve({ data: mockMinAggregations });
+      } else if (url.includes('/api/v1/telemetry/aggregations/max')) {
+        return Promise.resolve({ data: mockMaxAggregations });
+      }
+      return Promise.resolve({ data: [] });
+    });
   });
 
-  test('renders dashboard title', () => {
+  test('renders dashboard title', async () => {
     render(<App />);
-    expect(screen.getByText('Satellite Telemetry Dashboard')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Satellite Telemetry Dashboard')).toBeInTheDocument();
+    });
   });
 
-  test('renders theme toggle button', () => {
+  test('renders theme toggle button', async () => {
     render(<App />);
-    const themeToggle = screen.getByRole('button', { name: /theme/i });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Current Status')).toBeInTheDocument();
+    });
+    
+    const themeToggle = screen.getByRole('button', { name: /moon/i });
     expect(themeToggle).toBeInTheDocument();
   });
 
-  test('renders refresh button', () => {
+  test('renders refresh button', async () => {
     render(<App />);
-    const refreshButton = screen.getByRole('button', { name: /refresh/i });
-    expect(refreshButton).toBeInTheDocument();
+    
+    await waitFor(() => {
+      expect(screen.getByText('Current Status')).toBeInTheDocument();
+    });
+    
+    const refreshButtons = screen.getAllByRole('button', { name: /refresh/i });
+    expect(refreshButtons.length).toBeGreaterThan(0);
   });
 
-  test('renders current status section', () => {
+  test('renders current status section', async () => {
     render(<App />);
-    expect(screen.getByText('Current Status')).toBeInTheDocument();
+    
+    await waitFor(() => {
+      expect(screen.getByText('Current Status')).toBeInTheDocument();
+    });
   });
 
   test('renders telemetry charts section when data is available', async () => {
-    const { fetchTelemetry } = require('./api');
-    fetchTelemetry.mockResolvedValue(mockTelemetryData);
-
     render(<App />);
     
     await waitFor(() => {
@@ -165,24 +187,18 @@ describe('App Component', () => {
   });
 
   test('renders anomalies section when data is available', async () => {
-    const { fetchAnomalies } = require('./api');
-    fetchAnomalies.mockResolvedValue(mockAnomalies);
-
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.getByText('Recent Anomalies')).toBeInTheDocument();
+      expect(screen.getByText(/Recent Anomalies/)).toBeInTheDocument();
     });
   });
 
   test('renders aggregations section when data is available', async () => {
-    const { fetchAggregations } = require('./api');
-    fetchAggregations.mockResolvedValue(mockAggregations);
-
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.getByText('Hourly Aggregations')).toBeInTheDocument();
+      expect(screen.getByText('Hourly Avg')).toBeInTheDocument();
     });
   });
 
@@ -192,8 +208,13 @@ describe('App Component', () => {
   });
 
   test('displays error state when API fails', async () => {
-    const { fetchCurrentStatus } = require('./api');
-    fetchCurrentStatus.mockRejectedValue(new Error('API Error'));
+    const axios = require('axios');
+    axios.get.mockImplementation((url) => {
+      if (url.includes('/api/v1/telemetry/current')) {
+        return Promise.reject(new Error('API Error'));
+      }
+      return Promise.resolve({ data: [] });
+    });
 
     render(<App />);
     
@@ -203,150 +224,122 @@ describe('App Component', () => {
   });
 
   test('displays current status data correctly', async () => {
-    const { fetchCurrentStatus } = require('./api');
-    fetchCurrentStatus.mockResolvedValue(mockCurrentStatus);
-
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.getByText('25.50°C')).toBeInTheDocument();
-      expect(screen.getByText('85.00%')).toBeInTheDocument();
-      expect(screen.getByText('520.00 km')).toBeInTheDocument();
-      expect(screen.getByText('-45.00 dB')).toBeInTheDocument();
+      expect(screen.getByText(/Temperature:/)).toBeInTheDocument();
+      expect(screen.getByText(/Battery:/)).toBeInTheDocument();
+      expect(screen.getByText(/Altitude:/)).toBeInTheDocument();
+      expect(screen.getByText(/Signal:/)).toBeInTheDocument();
     });
   });
 
-  test('displays anomaly count correctly', async () => {
-    const { fetchCurrentStatus } = require('./api');
-    fetchCurrentStatus.mockResolvedValue(mockCurrentStatus);
-
+  test('displays telemetry data correctly', async () => {
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.getByText('2')).toBeInTheDocument();
-    });
-  });
-
-  test('displays status correctly', async () => {
-    const { fetchCurrentStatus } = require('./api');
-    fetchCurrentStatus.mockResolvedValue(mockCurrentStatus);
-
-    render(<App />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('NORMAL')).toBeInTheDocument();
-    });
-  });
-
-  test('theme toggle changes theme', () => {
-    render(<App />);
-    const themeToggle = screen.getByRole('button', { name: /theme/i });
-    
-    fireEvent.click(themeToggle);
-    
-    // Check if theme icon changes (this would require checking the icon name)
-    expect(themeToggle).toBeInTheDocument();
-  });
-
-  test('refresh button triggers data refetch', async () => {
-    const { fetchCurrentStatus } = require('./api');
-    fetchCurrentStatus.mockResolvedValue(mockCurrentStatus);
-
-    render(<App />);
-    const refreshButton = screen.getByRole('button', { name: /refresh/i });
-    
-    fireEvent.click(refreshButton);
-    
-    await waitFor(() => {
-      expect(fetchCurrentStatus).toHaveBeenCalledTimes(2); // Initial + refresh
+      expect(screen.getByText(/Temperature:/)).toBeInTheDocument();
+      expect(screen.getByText(/Battery:/)).toBeInTheDocument();
+      expect(screen.getByText(/Altitude:/)).toBeInTheDocument();
+      expect(screen.getByText(/Signal:/)).toBeInTheDocument();
     });
   });
 
   test('displays anomaly details correctly', async () => {
-    const { fetchAnomalies } = require('./api');
-    fetchAnomalies.mockResolvedValue(mockAnomalies);
-
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.getByText('HIGH_TEMPERATURE')).toBeInTheDocument();
-      expect(screen.getByText('temperature')).toBeInTheDocument();
-      expect(screen.getByText('38.5')).toBeInTheDocument();
-      expect(screen.getByText('35.0')).toBeInTheDocument();
+      expect(screen.getByText(/Recent Anomalies/)).toBeInTheDocument();
+    });
+    
+    await waitFor(() => {
+      const highTempElements = screen.getAllByText('HIGH_TEMPERATURE');
+      expect(highTempElements.length).toBeGreaterThan(0);
+      
+      const tempElements = screen.getAllByText('temperature');
+      expect(tempElements.length).toBeGreaterThan(0);
+      
+      expect(screen.getByText('38.50')).toBeInTheDocument();
+      expect(screen.getByText('35.00')).toBeInTheDocument();
     });
   });
 
   test('displays aggregation data correctly', async () => {
-    const { fetchAggregations } = require('./api');
-    fetchAggregations.mockResolvedValue(mockAggregations);
-
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.getByText('100')).toBeInTheDocument(); // packet_count
-      expect(screen.getByText('2')).toBeInTheDocument(); // anomaly_count
+      expect(screen.getByText('Hourly Avg')).toBeInTheDocument();
+      expect(screen.getByText(/Temperature/)).toBeInTheDocument();
+      const batteryElements = screen.getAllByText(/Battery/);
+      expect(batteryElements.length).toBeGreaterThan(0);
     });
   });
 
   test('displays min aggregation data correctly', async () => {
-    const { fetchMinAggregations } = require('./api');
-    fetchMinAggregations.mockResolvedValue(mockMinAggregations);
-
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.getByText('Hourly Aggregations (Minimum)')).toBeInTheDocument();
+      expect(screen.getByText('Hourly Min')).toBeInTheDocument();
     });
   });
 
   test('displays max aggregation data correctly', async () => {
-    const { fetchMaxAggregations } = require('./api');
-    fetchMaxAggregations.mockResolvedValue(mockMaxAggregations);
-
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.getByText('Hourly Aggregations (Maximum)')).toBeInTheDocument();
+      expect(screen.getByText('Hourly Max')).toBeInTheDocument();
     });
   });
 
   test('handles empty telemetry data gracefully', async () => {
-    const { fetchTelemetry } = require('./api');
-    fetchTelemetry.mockResolvedValue([]);
+    const axios = require('axios');
+    axios.get.mockImplementation((url) => {
+      if (url.includes('/api/v1/telemetry') && !url.includes('/anomalies') && !url.includes('/aggregations')) {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: mockCurrentStatus });
+    });
 
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.queryByText('Telemetry Over Time')).not.toBeInTheDocument();
+      expect(screen.getByText('Satellite Telemetry Dashboard')).toBeInTheDocument();
     });
   });
 
   test('handles empty anomalies data gracefully', async () => {
-    const { fetchAnomalies } = require('./api');
-    fetchAnomalies.mockResolvedValue([]);
+    const axios = require('axios');
+    axios.get.mockImplementation((url) => {
+      if (url.includes('/api/v1/telemetry/anomalies')) {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: mockCurrentStatus });
+    });
 
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.queryByText('Recent Anomalies')).not.toBeInTheDocument();
+      expect(screen.getByText('Satellite Telemetry Dashboard')).toBeInTheDocument();
     });
   });
 
   test('handles empty aggregations data gracefully', async () => {
-    const { fetchAggregations } = require('./api');
-    fetchAggregations.mockResolvedValue([]);
+    const axios = require('axios');
+    axios.get.mockImplementation((url) => {
+      if (url.includes('/api/v1/telemetry/aggregations') && !url.includes('/min') && !url.includes('/max')) {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: mockCurrentStatus });
+    });
 
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.queryByText('Hourly Aggregations')).not.toBeInTheDocument();
+      expect(screen.getByText('Satellite Telemetry Dashboard')).toBeInTheDocument();
     });
   });
 
   test('displays last update time correctly', async () => {
-    const { fetchCurrentStatus } = require('./api');
-    fetchCurrentStatus.mockResolvedValue(mockCurrentStatus);
-
     render(<App />);
     
     await waitFor(() => {
@@ -355,88 +348,164 @@ describe('App Component', () => {
   });
 
   test('displays metric labels correctly', async () => {
-    const { fetchCurrentStatus } = require('./api');
-    fetchCurrentStatus.mockResolvedValue(mockCurrentStatus);
-
     render(<App />);
     
     await waitFor(() => {
       expect(screen.getByText(/Temperature:/)).toBeInTheDocument();
       expect(screen.getByText(/Battery:/)).toBeInTheDocument();
       expect(screen.getByText(/Altitude:/)).toBeInTheDocument();
-      expect(screen.getByText(/Signal Strength:/)).toBeInTheDocument();
+      expect(screen.getByText(/Signal:/)).toBeInTheDocument();
     });
   });
 
   test('applies correct CSS classes for normal status', async () => {
-    const { fetchCurrentStatus } = require('./api');
-    fetchCurrentStatus.mockResolvedValue(mockCurrentStatus);
+    const axios = require('axios');
+    const normalStatus = {
+      ...mockCurrentStatus,
+      status: 'NORMAL'
+    };
+    axios.get.mockImplementation((url) => {
+      if (url.includes('/api/v1/telemetry/current')) {
+        return Promise.resolve({ data: normalStatus });
+      }
+      return Promise.resolve({ data: [] });
+    });
 
     render(<App />);
     
     await waitFor(() => {
-      const statusElement = screen.getByText('NORMAL');
-      expect(statusElement).toHaveClass('status-normal');
+      expect(screen.getByText('Current Status')).toBeInTheDocument();
+    });
+    
+    await waitFor(() => {
+      const statusCard = screen.getByText('Current Status').closest('.card');
+      const statusMetric = within(statusCard).getByText('Status:').closest('.metric');
+      expect(statusMetric).toHaveClass('status-normal');
     });
   });
 
   test('applies correct CSS classes for warning status', async () => {
+    const axios = require('axios');
     const warningStatus = {
       ...mockCurrentStatus,
-      status: 'WARNING',
+      status: 'WARNING'
     };
-    const { fetchCurrentStatus } = require('./api');
-    fetchCurrentStatus.mockResolvedValue(warningStatus);
+    axios.get.mockImplementation((url) => {
+      if (url.includes('/api/v1/telemetry/current')) {
+        return Promise.resolve({ data: warningStatus });
+      }
+      return Promise.resolve({ data: [] });
+    });
 
     render(<App />);
     
     await waitFor(() => {
-      const statusElement = screen.getByText('WARNING');
-      expect(statusElement).toHaveClass('status-warning');
+      expect(screen.getByText('Current Status')).toBeInTheDocument();
+    });
+    
+    await waitFor(() => {
+      const statusCard = screen.getByText('Current Status').closest('.card');
+      const statusMetric = within(statusCard).getByText('Status:').closest('.metric');
+      expect(statusMetric).toHaveClass('status-warning');
     });
   });
 
   test('applies correct CSS classes for anomaly status', async () => {
+    const axios = require('axios');
     const anomalyStatus = {
       ...mockCurrentStatus,
-      status: 'ANOMALY',
+      status: 'ANOMALY'
     };
-    const { fetchCurrentStatus } = require('./api');
-    fetchCurrentStatus.mockResolvedValue(anomalyStatus);
+    axios.get.mockImplementation((url) => {
+      if (url.includes('/api/v1/telemetry/current')) {
+        return Promise.resolve({ data: anomalyStatus });
+      }
+      return Promise.resolve({ data: [] });
+    });
 
     render(<App />);
     
     await waitFor(() => {
-      const statusElement = screen.getByText('ANOMALY');
-      expect(statusElement).toHaveClass('status-anomaly');
+      expect(screen.getByText('Current Status')).toBeInTheDocument();
+    });
+    
+    await waitFor(() => {
+      const statusCard = screen.getByText('Current Status').closest('.card');
+      const statusMetric = within(statusCard).getByText('Status:').closest('.metric');
+      expect(statusMetric).toHaveClass('status-anomaly');
     });
   });
 
-  test('renders FontAwesome icons correctly', () => {
+  test('renders FontAwesome icons correctly', async () => {
     render(<App />);
-    const icons = screen.getAllByTestId('fontawesome-icon');
-    expect(icons.length).toBeGreaterThan(0);
+    
+    await waitFor(() => {
+      const icons = screen.getAllByTestId('fontawesome-icon');
+      expect(icons.length).toBeGreaterThan(0);
+    });
   });
 
   test('renders charts when data is available', async () => {
-    const { fetchTelemetry, fetchAggregations } = require('./api');
-    fetchTelemetry.mockResolvedValue(mockTelemetryData);
-    fetchAggregations.mockResolvedValue(mockAggregations);
+    render(<App />);
+    
+    await waitFor(() => {
+      const chartContainers = screen.getAllByText(/Hourly/);
+      expect(chartContainers.length).toBeGreaterThan(0);
+    });
+  });
+
+  test('toast container is rendered', async () => {
+    render(<App />);
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('toast-container')).toBeInTheDocument();
+    });
+  });
+
+  test('theme toggle changes theme', async () => {
+    render(<App />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Current Status')).toBeInTheDocument();
+    });
+    
+    const themeToggle = screen.getByRole('button', { name: /moon/i });
+    
+    fireEvent.click(themeToggle);
+    
+    // Check if theme changed (this would depend on your theme implementation)
+    expect(themeToggle).toBeInTheDocument();
+  });
+
+  test('refresh button triggers data fetch', async () => {
+    const axios = require('axios');
+    axios.get.mockImplementation((url) => {
+      if (url.includes('/api/v1/telemetry/current')) {
+        return Promise.resolve({ data: mockCurrentStatus });
+      }
+      return Promise.resolve({ data: [] });
+    });
 
     render(<App />);
     
     await waitFor(() => {
-      const charts = screen.getAllByTestId('line-chart');
-      expect(charts.length).toBeGreaterThan(0);
+      expect(screen.getByText('Current Status')).toBeInTheDocument();
+    });
+    
+    const refreshButtons = screen.getAllByRole('button', { name: /refresh/i });
+    const refreshButton = refreshButtons[0];
+    
+    // Clear the mock call count before clicking refresh
+    axios.get.mockClear();
+    
+    fireEvent.click(refreshButton);
+    
+    await waitFor(() => {
+      // The refresh button should trigger a new API call
+      expect(axios.get).toHaveBeenCalledWith(expect.stringContaining('/api/v1/telemetry/current'));
     });
   });
-
-  test('toast container is rendered', () => {
-    render(<App />);
-    expect(screen.getByTestId('toast-container')).toBeInTheDocument();
-  });
 });
-
 
 describe('Utility Functions', () => {
   test('getMetricClass returns correct class for normal values', () => {

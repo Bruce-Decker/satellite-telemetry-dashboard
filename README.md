@@ -22,6 +22,31 @@
 ![UI1](screenshots/UI7.png)
 ![UI1](screenshots/UI8.png)
 
+### Grafana
+![Grafana1](screenshots/grafana1.png)
+![Grafana2](screenshots/grafana2.png)
+![Grafana3](screenshots/grafana3.png)
+![Grafana4](screenshots/grafana4.png)
+![Grafana5](screenshots/grafana5.png)
+![Grafana6](screenshots/grafana6.png)
+![Grafana7](screenshots/grafana7.png)
+
+### Prometheus
+![Prometheus1](screenshots/prometheus1.png)
+![Prometheus2](screenshots/prometheus2.png)
+![Prometheus3](screenshots/prometheus3.png)
+
+### Go Unit Tests
+![GoUnitTest](screenshots/GoUnitTest.png)
+
+### Integration Tests
+![IntegrationTest1](screenshots/IntegrationTest1.png)
+![IntegrationTest2](screenshots/IntegrationTest2.png)
+
+### Frontend Unit Tests
+![FrontendUnitTest](screenshots/FrontendUnitTest.png)
+
+
 
 ### GET /api/v1/telemetry
 ![GET /api/v1/telemetry](screenshots/API1.png)
@@ -35,21 +60,13 @@
 ### GET /api/v1/telemetry/aggregations
 ![GET /api/v1/telemetry/aggregations](screenshots/API4.png)
 
-## 📋 Prerequisites
 
-- Docker and Docker Compose
-- At least 4GB RAM available
-- Ports 3000, 8080, 8089, 8090, 9090, 3001 available
-- [Docker](https://www.docker.com/get-started)
-- [Node.js](https://nodejs.org/) (for local frontend dev)
-- [Go](https://golang.org/) (for local backend dev)
-
-## 🚀 Quick Start
+## Setup Instruction
 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd Turion_Take_Home
+   cd satellite-telemetry-dashboard
    ```
 
 2. **Start all services**
@@ -315,12 +332,6 @@ npm test -- --watchAll=false --coverage
 node integration-test.js
 ```
 
-**What Integration Tests Cover:**
-- ✅ API endpoint availability
-- ✅ Data format validation
-- ✅ End-to-end data flow
-- ✅ Error scenarios
-- ✅ Performance under load
 
 ## Docker Commands
 

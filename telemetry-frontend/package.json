@@ -47,5 +47,11 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://telemetry-api:8080"
+  "proxy": "http://telemetry-api:8080",
+  "devDependencies": {
+    "@babel/preset-env": "^7.27.2",
+    "@babel/preset-react": "^7.27.1",
+    "babel-jest": "^30.0.2",
+    "identity-obj-proxy": "^3.0.0"
+  }
 }
