@@ -2,7 +2,7 @@
 ### Frontend Setup
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/Bruce-Decker/satellite-telemetry-dashboard
 cd satellite-telemetry-dashboard
 
 # Start all services

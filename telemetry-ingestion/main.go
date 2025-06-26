@@ -72,10 +72,10 @@ func main() {
 		udpPort = "8090"
 	}
 
-	// Start HTTP health server in a goroutine
+	
 	go startHealthServer()
 
-	// Start UDP server
+	
 	addr := fmt.Sprintf(":%s", udpPort)
 	conn, err := net.ListenPacket("udp", addr)
 	if err != nil {

@@ -1,4 +1,3 @@
-// Force rebuild: <today's date>
 package main
 
 import (

@@ -10,6 +10,13 @@
 - **Containerization**: Docker Compose
 - **Protocol**: CCSDS (Consultative Committee for Space Data Systems)
 
+## Access Points:
+Frontend Dashboard: http://localhost:3000
+API: http://localhost:8080
+Grafana: http://localhost:3002 (admin/admin)
+Prometheus: http://localhost:9091
+Database: localhost:5434
+
 ## Screenshots
 
 ### Frontend
@@ -66,10 +73,13 @@
 
 
 ## Setup Instruction
+![docker compose up](screenshots/docker_compose_up.png)
+## Tear Down Instruction
+![docker compose down](screenshots/docker_compose_down.png)
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Bruce-Decker/satellite-telemetry-dashboard
    cd satellite-telemetry-dashboard
    ```
 
