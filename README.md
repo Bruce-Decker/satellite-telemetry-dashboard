@@ -12,6 +12,17 @@
 
 ## Screenshots
 
+### Frontend
+![UI1](screenshots/UI1.png)
+![UI1](screenshots/UI2.png)
+![UI1](screenshots/UI3.png)
+![UI1](screenshots/UI4.png)
+![UI1](screenshots/UI5.png)
+![UI1](screenshots/UI6.png)
+![UI1](screenshots/UI7.png)
+![UI1](screenshots/UI8.png)
+
+
 ### GET /api/v1/telemetry
 ![GET /api/v1/telemetry](screenshots/API1.png)
 

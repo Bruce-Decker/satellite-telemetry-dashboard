@@ -91,13 +91,13 @@ fi
 
 # Test monitoring services
 echo "📈 Testing monitoring services..."
-if check_service "Prometheus" "http://localhost:9090"; then
+if check_service "Prometheus" "http://localhost:9091"; then
     echo -e "${GREEN}✅ Prometheus is accessible${NC}"
 else
     echo -e "${RED}❌ Prometheus is not accessible${NC}"
 fi
 
-if check_service "Grafana" "http://localhost:3001"; then
+if check_service "Grafana" "http://localhost:3002"; then
     echo -e "${GREEN}✅ Grafana is accessible${NC}"
 else
     echo -e "${RED}❌ Grafana is not accessible${NC}"
@@ -119,8 +119,8 @@ echo "=================="
 echo "To access the applications:"
 echo "  📊 Dashboard: http://localhost:3000"
 echo "  🔌 API: http://localhost:8080"
-echo "  📈 Grafana: http://localhost:3001 (admin/admin)"
-echo "  📊 Prometheus: http://localhost:9090"
+echo "  📈 Grafana: http://localhost:3002 (admin/admin)"
+echo "  📊 Prometheus: http://localhost:9091"
 echo ""
 echo "To monitor logs:"
 echo "  docker-compose logs -f"

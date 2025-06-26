@@ -1,3 +1,4 @@
+// Force rebuild: <today's date>
 package main
 
 import (
@@ -8,10 +9,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Telemetry struct {
@@ -83,6 +86,13 @@ func main() {
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 
+	// Expose Prometheus metrics endpoint
+	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
+
+	app.Get("/test", func(c *fiber.Ctx) error {
+		return c.SendString("test ok")
+	})
+
 	api := app.Group("/api/v1")
 
 	api.Get("/telemetry", getTelemetry)
@@ -91,6 +101,7 @@ func main() {
 	api.Get("/telemetry/aggregations", getAggregations)
 	api.Get("/telemetry/aggregations/min", getMinAggregations)
 	api.Get("/telemetry/aggregations/max", getMaxAggregations)
+	api.Get("/telemetry/anomalies/count", getAnomalyCount)
 
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -223,7 +234,6 @@ func getTelemetry(c *fiber.Ctx) error {
 
 func getCurrentStatus(c *fiber.Ctx) error {
 	fmt.Println("DEBUG: getCurrentStatus handler called")
-
 
 	var latest Telemetry
 	query := `
@@ -569,4 +579,35 @@ func getMaxAggregations(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(aggregations)
+}
+
+func getAnomalyCount(c *fiber.Ctx) error {
+	startTime := c.Query("start_time")
+	endTime := c.Query("end_time")
+
+	query := `SELECT COUNT(*) FROM anomaly_history WHERE 1=1`
+	args := []interface{}{}
+	argCount := 0
+
+	if startTime != "" {
+		argCount++
+		query += fmt.Sprintf(" AND timestamp >= $%d", argCount)
+		args = append(args, startTime)
+	}
+	if endTime != "" {
+		argCount++
+		query += fmt.Sprintf(" AND timestamp <= $%d", argCount)
+		args = append(args, endTime)
+	}
+
+	var count int
+	err := db.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error":   "Failed to get anomaly count",
+			"details": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{"count": count})
 }

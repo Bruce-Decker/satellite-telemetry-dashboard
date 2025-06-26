@@ -25,7 +25,10 @@ services:
     ports:
       - "8089:8089"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      telemetry-ingestion:
+        condition: service_started
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -40,6 +43,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8090:8090"
+      - "8091:8091"
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,7 +81,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - telemetry-api
+      telemetry-api:
+        condition: service_started
     environment:
       - REACT_APP_API_URL=http://localhost:8080
 
@@ -108,6 +113,15 @@ services:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
       - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    environment:
+      DATA_SOURCE_NAME: "postgresql://telemetry_user:telemetry_pass@postgres:5432/telemetry?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgres
 
 volumes:
   postgres_data:

@@ -616,9 +616,9 @@ body, .card, .header h1 {
   stroke: var(--border-color);
 }
 
-.recharts-text {
+/* .recharts-text {
   fill: var(--text-secondary);
-}
+} */
 
 .recharts-legend-item-text {
   color: var(--text-secondary) !important;
